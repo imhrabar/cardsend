@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CardSend">
+<title>CardSend</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap');
+:root {
+  --bg:#0a0a0a; --surface:#111118; --surface2:#1a1a26;
+  --accent:#00d4ff; --accent2:#7b2fff; --warn:#ff6b35;
+  --success:#00ff88; --text:#e8e8f0; --muted:#5a5a70;
+  --border:rgba(0,212,255,0.15); --glow:0 0 20px rgba(0,212,255,0.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;
+  min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;
+  overflow-x:hidden;position:relative;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+body::after{
+  content:'';position:fixed;top:-200px;left:50%;transform:translateX(-50%);
+  width:600px;height:400px;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse,rgba(123,47,255,0.15) 0%,transparent 70%);
+}
+#httpsWarn{
+  position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.97);
+  display:none;align-items:center;justify-content:center;padding:24px;
+}
+.warn-box{
+  background:var(--surface);border:1px solid rgba(255,107,53,0.4);
+  border-radius:20px;padding:28px 24px;max-width:400px;width:100%;
+}
+.warn-icon{font-size:48px;text-align:center;margin-bottom:16px}
+.warn-title{font-size:18px;font-weight:700;color:var(--warn);margin-bottom:12px;text-align:center}
+.warn-text{font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:12px}
+.warn-code{
+  background:#0a0a0a;border:1px solid rgba(255,107,53,0.2);
+  border-radius:10px;padding:12px;font-family:'Share Tech Mono',monospace;
+  font-size:12px;color:var(--accent);margin-bottom:8px;word-break:break-all;
+}
+.warn-skip{
+  width:100%;margin-top:16px;padding:12px;background:rgba(255,107,53,0.1);
+  border:1px solid rgba(255,107,53,0.3);border-radius:12px;color:var(--warn);
+  font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;cursor:pointer;
+}
+.app{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;
+  max-width:480px;margin:0 auto;width:100%;padding:0 20px 30px}
+header{display:flex;align-items:center;justify-content:space-between;padding:52px 0 24px}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  box-shadow:var(--glow);
+}
+.logo h1{
+  font-size:20px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.logo span{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;display:block}
+.settings-btn{
+  background:var(--surface);border:1px solid var(--border);color:var(--muted);
+  width:42px;height:42px;border-radius:12px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  transition:all .2s;position:relative;
+}
+.settings-btn.has-device::after{
+  content:'';position:absolute;top:6px;right:6px;width:8px;height:8px;
+  background:var(--success);border-radius:50%;box-shadow:0 0 6px var(--success);
+}
+.bt-status{
+  display:flex;align-items:center;gap:10px;padding:10px 16px;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  margin-bottom:28px;font-size:13px;font-family:'Share Tech Mono',monospace;
+}
+.bt-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:all .3s}
+.bt-dot.connecting{background:var(--warn);animation:pulsew 1s infinite}
+.bt-dot.connected{background:var(--success);box-shadow:0 0 8px var(--success)}
+@keyframes pulsew{0%,100%{opacity:1}50%{opacity:.3}}
+.bt-label{color:var(--muted);flex:1}
+.bt-label.connected{color:var(--success)}
+.bt-label.connecting{color:var(--warn)}
+.bt-connect-btn{
+  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);
+  color:var(--accent);padding:4px 12px;border-radius:8px;font-size:11px;
+  font-family:'Share Tech Mono',monospace;cursor:pointer;
+  transition:all .2s;letter-spacing:1px;
+}
+.bt-connect-btn.disconnect{color:var(--warn);border-color:rgba(255,107,53,.4);background:rgba(255,107,53,.08)}
+.card-visual{
+  background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+  border:1px solid var(--border);border-radius:18px;padding:28px 24px;
+  margin-bottom:28px;position:relative;overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);
+}
+.card-visual::before{
+  content:'';position:absolute;top:-60%;right:-30%;width:250px;height:250px;
+  background:radial-gradient(circle,rgba(0,212,255,.08),transparent 70%);
+}
+.card-chip{
+  width:48px;height:36px;border-radius:6px;margin-bottom:20px;
+  background:linear-gradient(135deg,#d4af37,#ffd700,#b8860b);
+  box-shadow:0 2px 8px rgba(0,0,0,.4);position:relative;
+}
+.card-chip::after{content:'';position:absolute;inset:6px;border:1px solid rgba(0,0,0,.2);border-radius:3px}
+.card-number-display{
+  font-family:'Share Tech Mono',monospace;font-size:22px;letter-spacing:3px;
+  color:#fff;margin-bottom:6px;min-height:30px;
+  text-shadow:0 0 20px rgba(0,212,255,.5);transition:all .3s;
+}
+.card-number-display.empty{color:var(--muted);font-size:14px;letter-spacing:1px}
+.card-label{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+.signal-icon{position:absolute;bottom:22px;right:24px;opacity:.6;font-size:28px}
+.input-section{margin-bottom:20px}
+.input-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:10px;display:block}
+.input-wrapper{position:relative;display:flex;align-items:center}
+#cardInput{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:16px 52px 16px 18px;
+  font-family:'Share Tech Mono',monospace;font-size:18px;letter-spacing:2px;
+  color:var(--text);outline:none;transition:all .3s;-webkit-appearance:none;
+}
+#cardInput:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.12),var(--glow);background:var(--surface2)}
+#cardInput::placeholder{color:var(--muted);font-size:14px;letter-spacing:1px}
+.clear-btn{position:absolute;right:14px;background:none;border:none;color:var(--muted);
+  cursor:pointer;font-size:18px;padding:4px;display:none;transition:color .2s}
+.clear-btn.visible{display:block}
+.send-btn{
+  width:100%;padding:18px;background:linear-gradient(135deg,var(--accent2),var(--accent));
+  border:none;border-radius:16px;color:#fff;font-family:'Exo 2',sans-serif;
+  font-size:15px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;position:relative;overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,212,255,.25);margin-bottom:16px;
+}
+.send-btn:active{transform:scale(.98)}
+.send-btn.sending{background:linear-gradient(135deg,#1a1a26,#1a2a26);pointer-events:none}
+.send-btn.success{background:linear-gradient(135deg,#006644,var(--success))}
+.send-btn.error{background:linear-gradient(135deg,#660022,var(--warn))}
+.send-btn-inner{display:flex;align-items:center;justify-content:center;gap:10px}
+.log-section{flex:1}
+.log-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.log-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.log-clear{background:none;border:none;color:var(--muted);font-size:11px;
+  font-family:'Share Tech Mono',monospace;cursor:pointer;letter-spacing:1px;text-transform:uppercase}
+.log-box{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;min-height:120px;max-height:180px;overflow-y:auto;
+  font-family:'Share Tech Mono',monospace;font-size:12px;line-height:1.8;
+}
+.log-box::-webkit-scrollbar{width:4px}
+.log-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.log-entry{display:flex;gap:10px;align-items:flex-start}
+.log-time{color:var(--muted);min-width:60px;font-size:10px;margin-top:2px}
+.log-msg{flex:1}
+.log-msg.ok{color:var(--success)}
+.log-msg.err{color:var(--warn)}
+.log-msg.info{color:var(--accent)}
+.log-msg.muted{color:var(--muted)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.2);
+  border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+.toast{
+  position:fixed;bottom:90px;left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:50px;padding:10px 20px;font-size:13px;
+  font-family:'Share Tech Mono',monospace;color:var(--text);
+  z-index:200;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success-toast{border-color:rgba(0,255,136,.4);color:var(--success)}
+.toast.error-toast{border-color:rgba(255,107,53,.4);color:var(--warn)}
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;
+  display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .3s;
+}
+.overlay.open{opacity:1;pointer-events:all}
+.settings-sheet{
+  background:var(--surface);border:1px solid var(--border);border-bottom:none;
+  border-radius:24px 24px 0 0;width:100%;padding:0 24px 40px;max-height:90vh;overflow-y:auto;
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);
+}
+.overlay.open .settings-sheet{transform:translateY(0)}
+.sheet-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:14px auto 24px}
+.sheet-title{font-size:18px;font-weight:700;letter-spacing:1px;margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.setting-group{margin-bottom:22px}
+.setting-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:10px;display:block}
+.setting-row{
+  display:flex;align-items:center;gap:12px;padding:14px 16px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;
+}
+.setting-row-icon{font-size:20px}
+.setting-row-info{flex:1}
+.setting-row-name{font-size:14px;font-weight:600}
+.setting-row-desc{font-size:12px;color:var(--muted);margin-top:2px;font-family:'Share Tech Mono',monospace}
+.setting-row-action{
+  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);color:var(--accent);
+  padding:6px 14px;border-radius:8px;font-size:12px;font-family:'Share Tech Mono',monospace;
+  cursor:pointer;transition:all .2s;letter-spacing:1px;white-space:nowrap;
+}
+.setting-row-action.red{color:var(--warn);border-color:rgba(255,107,53,.3);background:rgba(255,107,53,.08)}
+.setting-input{
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  padding:12px 14px;font-family:'Share Tech Mono',monospace;font-size:14px;
+  color:var(--text);outline:none;width:100%;-webkit-appearance:none;display:block;
+}
+.setting-input:focus{border-color:var(--accent)}
+.uuids-info{
+  background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.1);
+  border-radius:10px;padding:12px 14px;font-family:'Share Tech Mono',monospace;
+  font-size:10px;color:var(--muted);line-height:1.8;word-break:break-all;
+}
+.close-sheet-btn{
+  width:100%;padding:16px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:14px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:14px;
+  font-weight:600;cursor:pointer;margin-top:8px;
+}
+.toggle-wrap{position:relative;display:inline-block;width:46px;height:26px;cursor:pointer;flex-shrink:0}
+.toggle-wrap input{position:absolute;opacity:0;width:0;height:0}
+.toggle-track{
+  position:absolute;inset:0;background:#1a1a26;
+  border:1px solid rgba(0,212,255,.2);border-radius:26px;transition:.3s;
+}
+.toggle-wrap input:checked ~ .toggle-track{border-color:rgba(0,212,255,.5);background:rgba(0,212,255,.1)}
+.toggle-thumb{
+  position:absolute;left:3px;top:3px;width:18px;height:18px;
+  background:var(--muted);border-radius:50%;transition:.3s;pointer-events:none;
+}
+.toggle-wrap input:checked ~ .toggle-thumb{left:23px;background:var(--accent)}
+</style>
+</head>
+<body>
+
+<!-- HTTPS WARNING -->
+<div id="httpsWarn">
+  <div class="warn-box">
+    <div class="warn-icon">⚠️</div>
+    <div class="warn-title">Потрібен HTTPS!</div>
+    <div class="warn-text">
+      Web Bluetooth працює <strong style="color:#fff">тільки через HTTPS</strong>.<br>
+      Відкрити файл напряму (file://) — не спрацює.<br><br>
+      <strong style="color:#fff">Варіант 1 — Python сервер (найпростіше):</strong>
+    </div>
+    <div class="warn-code">python3 -m http.server 8080</div>
+    <div class="warn-text">Потім в Chrome на телефоні відкрий:<br>
+      <span style="color:var(--accent)">http://&lt;IP вашого ПК&gt;:8080</span>
+    </div>
+    <div class="warn-text" style="margin-top:10px">
+      <strong style="color:#fff">Варіант 2 — GitHub Pages (HTTPS хостинг):</strong><br>
+      Завантаж файл на github.com → Settings → Pages → Deploy
+    </div>
+    <div class="warn-text" style="margin-top:10px">
+      <strong style="color:#fff">Варіант 3 — ngrok тунель:</strong>
+    </div>
+    <div class="warn-code">npx ngrok http 8080</div>
+    <button class="warn-skip" onclick="document.getElementById('httpsWarn').style.display='none'">
+      Зрозумів, продовжити (для тесту)
+    </button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">💳</div>
+      <div>
+        <h1>CardSend</h1>
+        <span>ESP32 RFID EMULATOR</span>
+      </div>
+    </div>
+    <button class="settings-btn" id="settingsBtn" onclick="openSettings()">⚙️</button>
+  </header>
+
+  <div class="bt-status">
+    <div class="bt-dot" id="btDot"></div>
+    <span class="bt-label" id="btLabel">Не підключено</span>
+    <button class="bt-connect-btn" id="btConnectBtn" onclick="toggleBLE()">CONNECT</button>
+  </div>
+
+  <div class="card-visual">
+    <div class="card-chip"></div>
+    <div class="card-number-display empty" id="cardDisplay">введіть ID картки...</div>
+    <div class="card-label">CARD / TAG ID</div>
+    <div class="signal-icon">📡</div>
+  </div>
+
+  <div class="input-section">
+    <label class="input-label" for="cardInput">ID картки / тегу</label>
+    <div class="input-wrapper">
+      <input type="text" id="cardInput" placeholder="напр. A1B2C3D4"
+        autocomplete="off" spellcheck="false" inputmode="text" maxlength="64"
+        oninput="onCardInput()">
+      <button class="clear-btn" id="clearBtn" onclick="clearInput()">✕</button>
+    </div>
+  </div>
+
+  <button class="send-btn" id="sendBtn" onclick="sendCard()">
+    <div class="send-btn-inner" id="sendBtnInner">
+      <span>📤</span><span>НАДІСЛАТИ</span>
+    </div>
+  </button>
+
+  <div class="log-section">
+    <div class="log-header">
+      <span class="log-title">📋 Лог</span>
+      <button class="log-clear" onclick="clearLog()">очистити</button>
+    </div>
+    <div class="log-box" id="logBox">
+      <div class="log-entry">
+        <span class="log-time">--:--:--</span>
+        <span class="log-msg muted">Очікування підключення...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="overlay" id="settingsOverlay" onclick="bgClose(event)">
+  <div class="settings-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>⚙️</span> Bluetooth налаштування</div>
+
+    <div class="setting-group">
+      <span class="setting-label">Підключення</span>
+      <div class="setting-row">
+        <span class="setting-row-icon">🔵</span>
+        <div class="setting-row-info">
+          <div class="setting-row-name">BLE UART (ESP32)</div>
+          <div class="setting-row-desc" id="deviceNameDisplay">не обрано</div>
+        </div>
+        <button class="setting-row-action" onclick="doScan()">SCAN</button>
+      </div>
+      <div class="setting-row" id="discRow" style="display:none">
+        <span class="setting-row-icon">🔌</span>
+        <div class="setting-row-info">
+          <div class="setting-row-name" id="connStatusText">Не підключено</div>
+          <div class="setting-row-desc" id="connDeviceName">—</div>
+        </div>
+        <button class="setting-row-action red" onclick="doDisconnect()">ВІДКЛЮЧ.</button>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <span class="setting-label">Режим сканування</span>
+      <div class="setting-row">
+        <span class="setting-row-icon">📡</span>
+        <div class="setting-row-info">
+          <div class="setting-row-name">Показати ВСІ BLE пристрої</div>
+          <div class="setting-row-desc">якщо ESP32 не знаходиться</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="acceptAll">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <span class="setting-label">Фільтр по імені (якщо не показати всі)</span>
+      <input type="text" class="setting-input" id="deviceNameFilter"
+        placeholder="ESP32-CardSend">
+    </div>
+
+    <div class="setting-group">
+      <span class="setting-label">Формат даних</span>
+      <div class="setting-row">
+        <span class="setting-row-icon">↩️</span>
+        <div class="setting-row-info">
+          <div class="setting-row-name">Додати Enter (\r\n)</div>
+          <div class="setting-row-desc">як клавіатурний RFID сканер</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="addNewline" checked>
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <span class="setting-label">BLE UUID — Nordic UART Service</span>
+      <div class="uuids-info">
+        SERVICE UUID:<br>6E400001-B5B2-F393-E0A9-E50E24DCCA9E<br><br>
+        WRITE (app→ESP32):<br>6E400002-B5B2-F393-E0A9-E50E24DCCA9E<br><br>
+        Прошийте ESP32: esp32_cardsend.ino
+      </div>
+    </div>
+
+    <button class="close-sheet-btn" onclick="closeSettings()">✕ Закрити</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SVC = '6e400001-b5b2-f393-e0a9-e50e24dcca9e';
+const RX  = '6e400002-b5b2-f393-e0a9-e50e24dcca9e';
+
+let bleDevice = null, bleChar = null, connected = false;
+
+// HTTPS check
+(function(){
+  var ok = location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1';
+  if(!ok) document.getElementById('httpsWarn').style.display='flex';
+})();
+
+// PWA Manifest — run after DOM loaded
+window.addEventListener('load', function(){
+  try {
+    var s=192, cv=document.createElement('canvas');
+    cv.width=cv.height=s;
+    var ctx=cv.getContext('2d');
+    ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,s,s);
+    ctx.fillStyle='#1a1a2e'; ctx.strokeStyle='#00d4ff'; ctx.lineWidth=4;
+    roundRect(ctx,24,38,144,90,12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffd700'; ctx.fillRect(38,54,30,22);
+    ctx.strokeStyle='#00d4ff'; ctx.lineWidth=3;
+    for(var i=0;i<3;i++){
+      ctx.globalAlpha=0.8-i*0.2;
+      ctx.beginPath(); ctx.arc(130,72,14+i*11,-1.1,1.1); ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+    var blob=new Blob([JSON.stringify({
+      name:'CardSend',short_name:'CardSend',start_url:'.',display:'standalone',
+      background_color:'#0a0a0a',theme_color:'#0a0a0a',
+      icons:[{src:cv.toDataURL('image/png'),sizes:'192x192',type:'image/png'}]
+    })],{type:'application/json'});
+    var lnk=document.createElement('link');
+    lnk.rel='manifest'; lnk.href=URL.createObjectURL(blob);
+    document.head.appendChild(lnk);
+  } catch(e){}
+});
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
+}
+
+// UI
+function ts(){ return new Date().toTimeString().slice(0,8); }
+
+function log(msg, type){
+  type = type||'info';
+  var box=document.getElementById('logBox');
+  var first=box.querySelector('.muted');
+  if(first) box.innerHTML='';
+  var d=document.createElement('div');
+  d.className='log-entry';
+  d.innerHTML='<span class="log-time">'+ts()+'</span><span class="log-msg '+type+'">'+msg+'</span>';
+  box.appendChild(d);
+  box.scrollTop=box.scrollHeight;
+}
+
+function clearLog(){
+  document.getElementById('logBox').innerHTML=
+    '<div class="log-entry"><span class="log-time">--:--:--</span><span class="log-msg muted">Лог очищено</span></div>';
+}
+
+function toast(msg, type){
+  type=type||'';
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+type+' show';
+  clearTimeout(t._t);
+  t._t=setTimeout(function(){t.classList.remove('show');},2400);
+}
+
+function onCardInput(){
+  var v=document.getElementById('cardInput').value.trim();
+  var d=document.getElementById('cardDisplay');
+  var b=document.getElementById('clearBtn');
+  if(v){ d.textContent=v.toUpperCase(); d.classList.remove('empty'); b.classList.add('visible'); }
+  else{ d.textContent='введіть ID картки...'; d.classList.add('empty'); b.classList.remove('visible'); }
+}
+
+function clearInput(){
+  document.getElementById('cardInput').value='';
+  onCardInput();
+}
+
+function setStatus(state, name){
+  var dot=document.getElementById('btDot');
+  var lbl=document.getElementById('btLabel');
+  var btn=document.getElementById('btConnectBtn');
+  var sbtn=document.getElementById('settingsBtn');
+  var cst=document.getElementById('connStatusText');
+  var cdn=document.getElementById('connDeviceName');
+  var drow=document.getElementById('discRow');
+
+  dot.className='bt-dot '+state;
+  if(state==='connected'){
+    lbl.textContent=name||'Підключено'; lbl.className='bt-label connected';
+    btn.textContent='ВІДКЛЮЧ.'; btn.className='bt-connect-btn disconnect';
+    sbtn.classList.add('has-device');
+    cst.textContent='✅ '+( name||'ESP32'); cdn.textContent=name||'ESP32';
+    drow.style.display='flex';
+  } else if(state==='connecting'){
+    lbl.textContent='Підключення...'; lbl.className='bt-label connecting';
+    btn.textContent='...'; btn.className='bt-connect-btn';
+    sbtn.classList.remove('has-device');
+    drow.style.display='none';
+  } else {
+    lbl.textContent='Не підключено'; lbl.className='bt-label';
+    btn.textContent='CONNECT'; btn.className='bt-connect-btn';
+    sbtn.classList.remove('has-device');
+    cst.textContent='Не підключено'; cdn.textContent='—';
+    drow.style.display='none';
+  }
+}
+
+// BLE
+function toggleBLE(){
+  if(connected){ doDisconnect(); } else { doScan(); }
+}
+
+function doScan(){
+  if(!navigator.bluetooth){
+    toast('❌ Web Bluetooth недоступний — потрібен HTTPS + Chrome','error-toast');
+    log('❌ Web Bluetooth API не знайдено. Відкривай через HTTPS!','err');
+    document.getElementById('httpsWarn').style.display='flex';
+    return;
+  }
+  closeSettings();
+
+  var filterName=document.getElementById('deviceNameFilter').value.trim();
+  var allDevices=document.getElementById('acceptAll').checked;
+
+  var options;
+  if(allDevices){
+    options={acceptAllDevices:true, optionalServices:[SVC]};
+  } else if(filterName){
+    options={filters:[{name:filterName}], optionalServices:[SVC]};
+  } else {
+    options={filters:[{services:[SVC]}]};
+  }
+
+  setStatus('connecting');
+  log('🔍 Пошук BLE пристроїв...','info');
+
+  navigator.bluetooth.requestDevice(options).then(function(device){
+    bleDevice=device;
+    bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+    document.getElementById('deviceNameDisplay').textContent=device.name||'невідомий';
+    log('📡 Знайдено: "'+( device.name||'невідомий')+'" — підключаюсь...','info');
+    return device.gatt.connect();
+  }).then(function(server){
+    return server.getPrimaryService(SVC).catch(function(){
+      throw new Error('Сервіс Nordic UART не знайдено. Перевір прошивку ESP32!');
+    });
+  }).then(function(service){
+    return service.getCharacteristic(RX);
+  }).then(function(char){
+    bleChar=char;
+    connected=true;
+    setStatus('connected', bleDevice.name);
+    log('✅ Підключено до "'+( bleDevice.name||'ESP32')+'"','ok');
+    toast('✅ '+(bleDevice.name||'ESP32'),'success-toast');
+    if(navigator.vibrate) navigator.vibrate([40,20,80]);
+  }).catch(function(e){
+    setStatus('disconnected');
+    var msg=e.message||String(e);
+    if(e.name==='NotFoundError' || msg.indexOf('cancel')!==-1 || msg.indexOf('chosen')!==-1){
+      log('Скасовано користувачем','muted');
+    } else {
+      log('❌ '+msg,'err');
+      toast('❌ '+msg.slice(0,60),'error-toast');
+    }
+  });
+}
+
+function onDisconnected(){
+  connected=false; bleChar=null;
+  setStatus('disconnected');
+  log('🔌 З\'єднання розірвано','err');
+  toast('🔌 BLE відключено','error-toast');
+}
+
+function doDisconnect(){
+  try{ if(bleDevice && bleDevice.gatt && bleDevice.gatt.connected) bleDevice.gatt.disconnect(); }catch(e){}
+  connected=false; bleChar=null;
+  setStatus('disconnected');
+  log('Відключено вручну','muted');
+}
+
+// SEND
+function sendCard(){
+  var id=document.getElementById('cardInput').value.trim();
+  if(!id){ toast('⚠️ Введіть ID картки','error-toast'); return; }
+  if(!connected||!bleChar){
+    toast('⚠️ Спочатку підключіться до ESP32','error-toast');
+    log('Пристрій не підключений','err');
+    return;
+  }
+
+  var btn=document.getElementById('sendBtn');
+  var inner=document.getElementById('sendBtnInner');
+  btn.className='send-btn sending'; btn.disabled=true;
+  inner.innerHTML='<div class="spinner"></div><span>НАДСИЛАННЯ...</span>';
+
+  var nl=document.getElementById('addNewline').checked;
+  var payload=id.toUpperCase()+(nl?'\r\n':'');
+  var data=new TextEncoder().encode(payload);
+  var CHUNK=20;
+
+  function sendChunk(i){
+    if(i>=data.length){
+      btn.className='send-btn success';
+      inner.innerHTML='<span>✅</span><span>НАДІСЛАНО!</span>';
+      log('✅ Надіслано: '+id.toUpperCase(),'ok');
+      toast('✅ Картку надіслано!','success-toast');
+      if(navigator.vibrate) navigator.vibrate([50,30,100]);
+      setTimeout(function(){
+        btn.className='send-btn'; btn.disabled=false;
+        inner.innerHTML='<span>📤</span><span>НАДІСЛАТИ</span>';
+      },1600);
+      return;
+    }
+    var chunk=data.slice(i,i+CHUNK);
+
+    // Try writeValueWithoutResponse, fallback to writeValue
+    var p;
+    if(bleChar.writeValueWithoutResponse){
+      p=bleChar.writeValueWithoutResponse(chunk);
+    } else {
+      p=bleChar.writeValue(chunk);
+    }
+    p.then(function(){
+      if(i+CHUNK<data.length){
+        setTimeout(function(){sendChunk(i+CHUNK);},30);
+      } else {
+        sendChunk(data.length);
+      }
+    }).catch(function(e){
+      btn.className='send-btn error';
+      inner.innerHTML='<span>❌</span><span>ПОМИЛКА</span>';
+      log('❌ '+(e.message||e),'err');
+      toast('❌ '+(e.message||String(e)).slice(0,60),'error-toast');
+      connected=false; setStatus('disconnected');
+      setTimeout(function(){
+        btn.className='send-btn'; btn.disabled=false;
+        inner.innerHTML='<span>📤</span><span>НАДІСЛАТИ</span>';
+      },1600);
+    });
+  }
+
+  sendChunk(0);
+}
+
+// Settings
+function openSettings(){ document.getElementById('settingsOverlay').classList.add('open'); }
+function closeSettings(){ document.getElementById('settingsOverlay').classList.remove('open'); }
+function bgClose(e){ if(e.target===document.getElementById('settingsOverlay')) closeSettings(); }
+
+// Enter key
+document.getElementById('cardInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter') sendCard();
+});
+</script>
+</body>
+</html>
